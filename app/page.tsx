@@ -45,16 +45,20 @@ export default function ListingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? <p>Loading cards...</p> : filtered.map((item) => (
-            <div key={item.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex items-center gap-4">
-              <img src={item.photo_1} className="w-20 h-20 rounded-2xl object-cover bg-slate-100" alt="" />
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">{item.name}</h3>
-                <p className="text-indigo-600 text-sm font-medium">{item.occupation}</p>
-                <div className="flex items-center gap-1 text-slate-400 text-xs mt-2">
-                  <MapPin size={12} /> {item.place}
-                </div>
-              </div>
-            </div>
+            <div key={item.id} 
+                 onClick={() => window.location.href = `/details/${item.id}`}
+                 className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:scale-[1.02] transition-all">
+            <img 
+              src={item.photo_1} 
+              className="w-16 h-16 rounded-2xl object-cover bg-slate-100" 
+              alt="" 
+              onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=...'; }}
+            />
+          <div>
+            <h3 className="font-bold text-slate-800">{item.name}</h3>
+            <p className="text-slate-500 text-xs">{item.occupation}</p>
+          </div>
+          </div>
           ))}
         </div>
       </div>
