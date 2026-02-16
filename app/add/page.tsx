@@ -16,11 +16,26 @@ export default function AddEntry() {
     // 1. Upload Photo
     const file1 = (e.currentTarget.elements.namedItem('photo1') as HTMLInputElement).files?.[0];
     let photo1Url = "";
+
     if (file1) {
-      const fileName = `${contact}_${Date.now()}`;
-      const { data } = await supabase.storage.from('user-photos').upload(fileName, file1);
+      // Replace spaces and special chars in filename
+      const cleanFileName = `${contact.replace(/\s+/g, '-')}-${Date.now()}`;
+      
+      const { data, error: uploadError } = await supabase.storage.from('user-photos').upload(cleanFileName, file1);
+    
+      if (uploadError) {
+        console.error("Upload Error:", uploadError);
+        alert("Image upload failed: " + uploadError.message);
+        setStatus('idle');
+        return;
+      }
+    
       if (data) {
-        photo1Url = supabase.storage.from('user-photos').getPublicUrl(data.path).data.publicUrl;
+        // Get the Public URL
+        const { data: publicData } = supabase.storage
+          .from('user-photos')
+          .getPublicUrl(data.path);
+        photo1Url = publicData.publicUrl;
       }
     }
 
