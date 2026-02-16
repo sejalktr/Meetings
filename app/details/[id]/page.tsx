@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
-import { MapPin, Phone, Briefcase, User, GraduationCap, ArrowLeft, Calendar, Clock, Heart } from 'lucide-react';
+import { MapPin, Phone, Briefcase, User, GraduationCap, ArrowLeft, Calendar, Clock, Heart, UserCircle } from 'lucide-react';
 
 export default function DetailPage() {
   const { id } = useParams();
