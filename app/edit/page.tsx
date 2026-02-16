@@ -28,23 +28,28 @@ function EditForm() {
     loadData();
   }, [token]);
 
+    
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     
-    const form = e.currentTarget;
+    const formData = new FormData(e.currentTarget);
+    
+    // Create an object with the exact column names from your Supabase table
     const updates = {
-      name: (form.elements.namedItem('name') as HTMLInputElement).value,
-      dob: (form.elements.namedItem('dob') as HTMLInputElement).value,
-      time: (form.elements.namedItem('time') as HTMLInputElement).value,
-      place: (form.elements.namedItem('place') as HTMLInputElement).value,
-      education: (form.elements.namedItem('education') as HTMLInputElement).value,
-      occupation: (form.elements.namedItem('occupation') as HTMLInputElement).value,
-      business: (form.elements.namedItem('business') as HTMLInputElement).value,
-      father_name: (form.elements.namedItem('father_name') as HTMLInputElement).value,
-      mother_name: (form.elements.namedItem('mother_name') as HTMLInputElement).value,
-      contact_number: (form.elements.namedItem('contact_number') as HTMLInputElement).value,
+      name: formData.get('name'),
+      dob: formData.get('dob'),
+      time: formData.get('time'),
+      place: formData.get('place'),
+      education: formData.get('education'),
+      occupation: formData.get('occupation'),
+      business: formData.get('business'),
+      father_name: formData.get('father_name'),
+      mother_name: formData.get('mother_name'),
+      contact_number: formData.get('contact_number'),
     };
+
+    console.log("Sending updates to Supabase:", updates);
 
     const { error } = await supabase
       .from('entries')
@@ -52,14 +57,16 @@ function EditForm() {
       .eq('edit_token', token);
 
     setSaving(false);
+    
     if (error) {
-      alert("Error updating profile: " + error.message);
+      console.error("Supabase Error:", error);
+      alert("Update failed: " + error.message);
     } else {
       alert("Profile updated successfully!");
       router.push('/');
     }
   }
-
+  
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
