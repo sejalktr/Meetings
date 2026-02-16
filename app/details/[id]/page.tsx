@@ -86,13 +86,24 @@ export default function DetailPage() {
 
         {/* DETAILS GRID */}
         <div className="mt-10 grid grid-cols-1 gap-4 text-left">
-          
-          <div className="grid grid-cols-3 gap-4">
-             <DetailBox label="DOB" value={person.dob} icon={<Calendar size={18} className="text-blue-500" />} />
-             <DetailCard icon={<Calendar size={18} className="text-blue-500"/>} title="Age" value={`${calculateAge(person.dob)} Years`} />
-             <DetailCard icon={<Clock size={18} className="text-amber-500"/>} title="Birth Time" value={person.time} />
-          </div>
-          
+        
+         <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <DetailCard 
+          icon={<Calendar size={16} className="text-blue-500"/>} 
+          title="DOB" 
+          value={person.dob} 
+        />
+        <DetailCard 
+          icon={<UserCircle size={16} className="text-indigo-500"/>} 
+          title="Age" 
+          value={`${calculateAge(person.dob)} Yrs`} 
+        />
+        <DetailCard 
+          icon={<Clock size={16} className="text-amber-500"/>} 
+          title="Time" 
+          value={person.time} 
+        />
+      </div>
 
           <DetailCard icon={<MapPin size={18} className="text-rose-500"/>} title="Place of Birth" value={person.place} />
           <DetailCard icon={<GraduationCap size={18} className="text-purple-500"/>} title="Education" value={person.education} />
@@ -131,15 +142,14 @@ export default function DetailPage() {
   );
 }
 
+
 // Reusable Detail Card Component
 function DetailCard({ icon, title, value }: { icon: React.ReactNode, title: string, value: string }) {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:border-indigo-100 transition-colors">
-      <div className="p-3 bg-slate-50 rounded-2xl">{icon}</div>
-      <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none mb-1">{title}</p>
-        <p className="text-slate-700 font-bold text-sm">{value || 'Not Provided'}</p>
-      </div>
+    <div className="flex flex-col items-center text-center p-3 rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="mb-2 p-2 bg-slate-50 rounded-xl">{icon}</div>
+      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-1">{title}</p>
+      <p className="text-slate-700 font-bold text-[11px] sm:text-sm truncate w-full">{value || 'N/A'}</p>
     </div>
   );
 }
