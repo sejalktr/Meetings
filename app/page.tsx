@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, MapPin, Plus } from 'lucide-react';
+import { Search, MapPin, Plus, Sparkles, Calendar, Clock } from 'lucide-react';
 
 export default function ListingPage() {
   const [entries, setEntries] = useState<any[]>([]);
@@ -20,10 +20,7 @@ export default function ListingPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const { data } = await supabase
-        .from('entries')
-        .select('*')
-        .order('name', { ascending: true });
+      const { data } = await supabase.from('entries').select('*').order('name', { ascending: true });
       if (data) setEntries(data);
       setLoading(false);
     }
@@ -33,72 +30,92 @@ export default function ListingPage() {
   const filtered = entries.filter(item => {
     const searchTerm = search.toLowerCase();
     const age = calculateAge(item.dob).toString();
-    return (
-      item.name.toLowerCase().includes(searchTerm) || 
-      item.place.toLowerCase().includes(searchTerm) || 
-      age.includes(searchTerm)
-    );
+    return item.name.toLowerCase().includes(searchTerm) || item.place.toLowerCase().includes(searchTerm) || age.includes(searchTerm);
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-black text-slate-900 tracking-tighter italic">DIRECTORY<span className="text-emerald-500">.</span></h1>
-          <a href="/add" className="bg-slate-900 text-white p-2 rounded-xl">
-            <Plus size={20} />
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900">
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="bg-slate-900 p-2 rounded-xl">
+               <Sparkles size={18} className="text-emerald-400" />
+            </div>
+            <span className="font-black text-xl tracking-tighter uppercase">NETWORK<span className="text-emerald-500">.</span></span>
+          </div>
+          <a href="/add" className="bg-slate-900 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-slate-200">
+            <Plus size={18} /> Join Now
           </a>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-3 py-6">
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+      <main className="max-w-6xl mx-auto px-4 py-10">
+        {/* GROWTH HEADER */}
+        <div className="mb-10 text-left px-2">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-none">
+            Our growing <br/>
+            <span className="text-emerald-500">community.</span>
+          </h2>
+          <p className="mt-3 text-slate-400 font-medium text-sm md:text-base">Connecting community across the region.</p>
+        </div>
+
+        {/* SEARCH BAR */}
+        <div className="relative mb-8 max-w-xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, city, age..." 
-            className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white outline-none focus:border-emerald-500 text-sm font-medium transition-all"
+            placeholder="Search name, city or age..." 
+            className="w-full pl-11 pr-4 py-4 rounded-2xl border border-slate-200 bg-white shadow-sm focus:border-emerald-500 outline-none transition-all font-semibold text-sm"
           />
         </div>
 
-        {/* 2-COLUMN GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {/* COMPACT HORIZONTAL GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {loading ? (
-             [1,2,3,4].map(i => <div key={i} className="h-48 bg-white animate-pulse rounded-[2rem]"></div>)
+             [1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-3xl"></div>)
           ) : filtered.map((item) => (
             <div 
               key={item.id} 
               onClick={() => window.location.href = `/details/${item.id}`}
-              className="bg-white p-2.5 rounded-[2rem] border border-slate-100 shadow-sm active:scale-95 transition-transform cursor-pointer flex flex-col h-full"
+              className="group bg-white p-3 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-100 transition-all cursor-pointer flex items-center gap-4"
             >
-              <img 
-                src={item.photo_1} 
-                className="w-full aspect-square rounded-[1.5rem] object-cover mb-3" 
-                alt={item.name} 
-              />
-              
-              <div className="px-1 flex flex-col flex-1 justify-between">
-                <div>
-                  {/* 2-LINE NAME LOGIC */}
-                  <h3 className="font-bold text-slate-900 text-[13px] leading-tight line-clamp-2 min-h-[2rem]">
-                    {item.name}
-                  </h3>
-                  
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      {calculateAge(item.dob)}Y
-                    </span>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[60px]">
-                      {item.occupation}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-slate-50 flex items-center gap-1 text-slate-400">
-                  <MapPin size={10} className="shrink-0 text-emerald-500" />
-                  <span className="text-[9px] font-medium truncate italic">{item.place}</span>
+              {/* COMPACT IMAGE */}
+              <div className="relative shrink-0">
+                <img 
+                  src={item.photo_1} 
+                  className="w-24 h-24 rounded-2xl object-cover shadow-inner" 
+                  alt={item.name} 
+                />
+                <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full border-2 border-white">
+                  {calculateAge(item.dob)}Y
                 </div>
               </div>
+              
+              <div className="flex-1 min-w-0 pr-2">
+                <h3 className="font-black text-slate-900 text-[16px] leading-tight line-clamp-2">
+                  {item.name}
+                </h3>
+                
+                {/* DOB & TIME IN ONE ROW TO SAVE SPACE */}
+                <div className="mt-2 space-y-1 text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={10} className="text-emerald-500" />
+                      <span className="text-[10px] font-bold">{item.dob}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={10} className="text-emerald-500" />
+                      <span className="text-[10px] font-bold">{item.time || "N/A"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MapPin size={10} className="text-emerald-500" />
+                    <span className="text-[10px] font-bold truncate italic uppercase tracking-tighter">{item.place}</span>
+                  </div>
+                </div>
+              </div>
+              <ArrowRight size={16} className="text-slate-200 group-hover:text-emerald-500 transition-colors shrink-0" />
             </div>
           ))}
         </div>
