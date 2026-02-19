@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   MapPin, Phone, Briefcase, ArrowLeft, Calendar, 
-  Clock, Heart, Sparkles, Loader2, Share2 
+  Clock, Heart, Sparkles, Loader2, Share2, UserCircle2
 } from 'lucide-react';
 
 export default function DetailPage() {
@@ -12,6 +12,33 @@ export default function DetailPage() {
   const router = useRouter();
   const [person, setPerson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // --- AGE CALCULATION LOGIC ---
+  const calculateAge = (dobString: string) => {
+    if (!dobString) return 0;
+    const today = new Date();
+    const birthDate = new Date(dobString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    return age > 0 ? age : 0;
+  };
+
+  // --- SHARE FUNCTIONALITY ---
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${person.name} | Network Directory`,
+          text: `Check out ${person.name}'s profile on our community network.`,
+          url: window.location.href,
+        });
+      } catch (err) { console.log('Error sharing', err); }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -22,126 +49,131 @@ export default function DetailPage() {
     loadData();
   }, [id]);
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <Loader2 className="animate-spin text-emerald-500" size={32} />
-    </div>
-  );
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><Loader2 className="animate-spin text-emerald-500" size={32} /></div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24">
-      {/* MINIMAL NAV */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4">
+    <div className="min-h-screen bg-[#FAFBFF] pb-24 text-slate-900">
+      {/* 1. UPDATED NAVBAR */}
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-slate-100 px-6 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <ArrowLeft size={22} className="text-slate-600" />
+          <button onClick={() => router.push('/')} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">
+            <ArrowLeft size={20} className="text-slate-600" />
           </button>
-          <span className="font-black text-[10px] tracking-[0.3em] uppercase text-slate-400">Profile View</span>
-          <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <Share2 size={20} className="text-slate-600" />
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="font-black text-[11px] tracking-[0.3em] uppercase text-slate-800">Verified Profile</span>
+          </div>
+          <button onClick={handleShare} className="p-3 bg-emerald-50 hover:bg-emerald-100 rounded-2xl transition-all group">
+            <Share2 size={20} className="text-emerald-600 group-hover:scale-110 transition-transform" />
           </button>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 pt-8">
-        {/* IMAGE GALLERY - BENTO STYLE */}
-        <div className="grid grid-cols-12 gap-3 h-[320px] md:h-[480px]">
-          <div className="col-span-8 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-slate-200">
-            <img src={person.photo_1} className="w-full h-full object-cover" alt="Primary" />
+      <main className="max-w-4xl mx-auto px-6 pt-6">
+        {/* 2. SECTION 1: TWO IMAGES (Side by Side) */}
+        <div className="grid grid-cols-2 gap-4 h-[260px] md:h-[400px]">
+          <ImageFrame src={person.photo_1} alt="Primary" />
+          <ImageFrame src={person.photo_2} alt="Secondary" />
+        </div>
+
+        {/* 3. SECTION 2: IDENTITY & METADATA */}
+        <div className="mt-10 space-y-8">
+          <div>
+            <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 leading-[0.9]">
+              {person.name}
+            </h1>
+            <p className="mt-4 text-emerald-600 font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+              <Briefcase size={14} /> {person.occupation}
+            </p>
           </div>
-          <div className="col-span-4 flex flex-col gap-3">
-            <div className="flex-1 overflow-hidden rounded-[2.5rem] shadow-lg">
-              <img src={person.photo_2 || person.photo_1} className="w-full h-full object-cover grayscale-[0.3]" alt="Secondary" />
-            </div>
-            {/* COMPACT AGE BADGE INSTEAD OF EST CARD */}
-            <div className="h-24 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center shadow-sm">
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Age</span>
-               <span className="text-2xl font-black text-slate-900">{/* Age Logic */}-</span>
-            </div>
+
+          {/* META GRID */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MetaBox icon={<Calendar size={18}/>} label="Birth Date" value={person.dob} />
+            <MetaBox icon={<Clock size={18}/>} label="Time" value={person.time || "--:--"} />
+            <MetaBox icon={<MapPin size={18}/>} label="Birth Place" value={person.place} />
+            <MetaBox icon={<Sparkles size={18}/>} label="Age" value={`${calculateAge(person.dob)} Years`} />
           </div>
         </div>
 
-        {/* PRIMARY IDENTITY */}
-        <div className="mt-10 mb-12">
-          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter leading-[0.9]">
-            {person.name}
-          </h1>
-          <div className="flex flex-wrap items-center gap-4 mt-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
-              <Calendar size={14} className="text-emerald-500" />
-              <span className="text-xs font-bold text-slate-600">{person.dob}</span>
+        {/* 4. SECTION 3: FAMILY ROOTS (LIGHT THEME) */}
+        <div className="mt-12 bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-xl shadow-slate-200/50">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="p-3 bg-red-50 text-red-500 rounded-2xl">
+              <Heart size={20} fill="currentColor" />
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
-              <Clock size={14} className="text-emerald-500" />
-              <span className="text-xs font-bold text-slate-600">{person.time || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
-              <MapPin size={14} className="text-emerald-500" />
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-tighter">{person.place}</span>
-            </div>
+            <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400">Legacy & Roots</h3>
           </div>
-        </div>
 
-        {/* ROOTS & PROFESSIONAL CARD (DARK THEME) */}
-        <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl shadow-slate-300 relative overflow-hidden">
-          <Sparkles className="absolute top-10 right-10 text-emerald-500/20" size={80} />
-          
-          <div className="relative z-10 space-y-12">
-            {/* ROOTS SECTION */}
-            <div className="space-y-10">
-              <div className="flex items-center gap-2 text-emerald-500">
-                <Heart size={18} fill="currentColor" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Family Roots</span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-2">
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Father's Name</p>
-                  <p className="text-3xl font-bold tracking-tight border-l-2 border-emerald-500 pl-4">
-                    {person.father_name || "—"}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Mother's Name</p>
-                  <p className="text-3xl font-bold tracking-tight border-l-2 border-emerald-500 pl-4">
-                    {person.mother_name || "—"}
-                  </p>
-                </div>
-              </div>
+          <div className="space-y-10">
+            {/* Father */}
+            <div className="group">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Father's Name</p>
+              <p className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight group-hover:text-emerald-600 transition-colors">
+                {person.father_name || "—"}
+              </p>
             </div>
 
-            {/* PROFESSIONAL SECTION - INTEGRATED BELOW ROOTS */}
-            <div className="pt-10 border-t border-white/10 space-y-4">
-              <div className="flex items-center gap-2 text-emerald-500">
-                <Briefcase size={18} />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Profession & Business</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-white leading-tight">
-                  {person.occupation}
-                </p>
-                <p className="text-xl font-medium text-emerald-400 italic">
-                  {person.business || "Independent Practice"}
-                </p>
-              </div>
+            {/* Mother */}
+            <div className="group">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Mother's Name</p>
+              <p className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight group-hover:text-emerald-600 transition-colors">
+                {person.mother_name || "—"}
+              </p>
             </div>
 
-            {/* CONTACT SECTION */}
-            <div className="pt-10 border-t border-white/10">
-              <a 
-                href={`tel:${person.contact_number}`}
-                className="inline-flex items-center gap-4 bg-emerald-500 hover:bg-emerald-400 transition-colors px-8 py-4 rounded-3xl"
-              >
-                <Phone size={24} fill="white" />
-                <div className="text-left">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-900">Direct Contact</p>
-                  <p className="text-xl font-black text-white">{person.contact_number}</p>
+            {/* Business - MOVED HERE */}
+            <div className="pt-10 border-t border-slate-50">
+              <p className="text-emerald-600 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Briefcase size={14} /> Family Business / Enterprise
+              </p>
+              <p className="text-2xl font-black text-slate-900 leading-tight">
+                {person.business || "General Enterprise"}
+              </p>
+            </div>
+
+            {/* Contact */}
+            <div className="pt-6">
+              <a href={`tel:${person.contact_number}`} className="flex items-center gap-4 p-4 bg-slate-900 rounded-[2rem] text-white hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  <Phone size={24} fill="currentColor" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Mobile Number</p>
+                  <p className="text-xl font-bold">{person.contact_number}</p>
                 </div>
               </a>
             </div>
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// --- REUSABLE UI COMPONENTS ---
+
+function ImageFrame({ src, alt }: { src: string, alt: string }) {
+  return (
+    <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-100 shadow-xl border-4 border-white">
+      {src ? (
+        <img src={src} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" alt={alt} />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+          <UserCircle2 size={60} strokeWidth={1} />
+          <span className="text-[10px] font-bold uppercase mt-2">No {alt} Photo</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetaBox({ icon, label, value }: { icon: any, label: string, value: string }) {
+  return (
+    <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:border-emerald-200 transition-all">
+      <div className="text-emerald-500 mb-3 group-hover:scale-110 transition-transform">{icon}</div>
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">{label}</p>
+      <p className="text-[13px] font-bold text-slate-900">{value}</p>
     </div>
   );
 }
