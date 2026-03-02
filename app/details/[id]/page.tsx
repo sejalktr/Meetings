@@ -18,27 +18,36 @@ export default function DetailPage() {
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // --- PDF DOWNLOAD LOGIC ---
+  // --- FIXED DOWNLOAD LOGIC (No Clipping) ---
   const handleDownload = async () => {
     if (!downloadRef.current) return;
     setIsDownloading(true);
+
+    // Trick: Scroll to top so html2canvas captures from the start
+    window.scrollTo(0, 0);
+
     try {
       const element = downloadRef.current;
       const canvas = await html2canvas(element, {
-        scale: 3, // High quality
-        useCORS: true, // Crucial for Supabase Images
+        scale: 2, 
+        useCORS: true,
+        logging: false,
         backgroundColor: "#FAFBFF",
+        // Force the canvas to be the full height of the element
+        height: element.scrollHeight,
+        windowHeight: element.scrollHeight
       });
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${person.name}_Biodata.pdf`);
     } catch (err) {
-      console.error('Download Error:', err);
-      alert("Failed to generate PDF. Check CORS settings.");
+      console.error(err);
     } finally {
       setIsDownloading(false);
     }
@@ -79,102 +88,91 @@ export default function DetailPage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><Loader2 className="animate-spin text-emerald-500" size={32} /></div>;
 
- return (
-    <div className="min-h-screen bg-[#FAFBFF] pb-32 text-slate-900">
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-slate-100 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+return (
+    <div className="min-h-screen bg-[#FAFBFF] pb-24 text-slate-900">
+      {/* 1. NAVBAR (Exclude from Ref) */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4">
+        <div className="max-w-3xl mx-auto flex justify-between items-center">
           <button onClick={() => router.push('/')} className="p-3 bg-slate-50 rounded-2xl">
-            <ArrowLeft size={20} className="text-slate-600" />
+            <ArrowLeft size={20} />
           </button>
-          <button onClick={handleDownload} disabled={isDownloading} className="p-3 bg-slate-900 text-white rounded-2xl flex items-center gap-2 px-6 shadow-xl active:scale-95 transition-all">
-            {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {isDownloading ? 'Downloading...' : 'Download PDF'}
-            </span>
+          <button 
+            onClick={handleDownload} 
+            disabled={isDownloading}
+            className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl disabled:opacity-50"
+          >
+            {isDownloading ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+            {isDownloading ? "Generating..." : "Download PDF"}
           </button>
         </div>
       </nav>
 
-      {/* THE CAPTURE AREA */}
-      <main ref={downloadRef} className="max-w-3xl mx-auto px-6 pt-6 bg-[#FAFBFF]">
+      {/* 2. CAPTURE AREA (Wrapped in Ref) */}
+      <main ref={downloadRef} className="max-w-3xl mx-auto px-6 pt-8 bg-[#FAFBFF]">
         
-        {/* 1. IMAGES */}
-        <div className="grid grid-cols-2 gap-4 h-[260px] md:h-[400px]">
+        {/* IMAGES */}
+        <div className="grid grid-cols-2 gap-4 h-[280px] md:h-[400px]">
           <ImageFrame src={person.photo_1} alt="Primary" />
           <ImageFrame src={person.photo_2} alt="Secondary" />
         </div>
 
-        {/* 2. IDENTITY (NO CARDS - CLEAN TEXT) */}
-        <div className="mt-10 space-y-6">
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 leading-[0.9]">
-            {person.name}
-          </h1>
-          
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-3">
-              <Briefcase size={18} className="text-emerald-500" />
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                Occupation: <span className="text-slate-900 ml-2">{person.occupation}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <UserCircle2 size={18} className="text-emerald-500" />
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                Gotra: <span className="text-slate-900 ml-2">{person.gotra || "—"}</span>
-              </p>
-            </div>
+        {/* IDENTITY */}
+        <div className="mt-10 space-y-4">
+          <h1 className="text-5xl font-black tracking-tighter leading-tight">{person.name}</h1>
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 text-emerald-600 font-black text-[11px] uppercase tracking-widest">
+              <Briefcase size={14} /> {person.occupation}
+            </p>
+            <p className="flex items-center gap-2 text-slate-400 font-black text-[11px] uppercase tracking-widest">
+              <UserCircle2 size={14} /> Gotra: <span className="text-slate-900">{person.gotra || "—"}</span>
+            </p>
           </div>
 
-          {/* BIRTH META GRID */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-6">
-            <MetaBox icon={<Calendar size={18}/>} label="Birth Date" value={person.dob} />
-            <MetaBox icon={<Clock size={18}/>} label="Time" value={person.time || "--:--"} />
-            <MetaBox icon={<MapPin size={18}/>} label="Birth Place" value={person.place} />
-            <MetaBox icon={<GraduationCap size={18}/>} label="Education" value={person.education} />
-            <MetaBox icon={<Sparkles size={18}/>} label="Age" value={`${calculateAge(person.dob)} Years`} />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-4">
+            <MetaBox icon={<Calendar size={16}/>} label="DOB" value={person.dob} />
+            <MetaBox icon={<Clock size={16}/>} label="Time" value={person.time} />
+            <MetaBox icon={<MapPin size={16}/>} label="Place" value={person.place} />
+            <MetaBox icon={<GraduationCap size={16}/>} label="Edu" value={person.education} />
+            <MetaBox icon={<Sparkles size={16}/>} label="Age" value={`${calculateAge(person.dob)}y`} />
           </div>
         </div>
 
-        {/* 3. BIO SECTION */}
+        {/* BIO */}
         {person.bio && (
-          <div className="mt-14 space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-2">Personal Note</p>
-            <div className="p-8 bg-white border-l-4 border-emerald-500 rounded-r-[2rem] shadow-sm">
-              <p className="text-slate-700 italic leading-relaxed text-lg">"{person.bio}"</p>
-              {person.hobbies && (
-                <p className="mt-6 text-[11px] font-bold text-slate-400 capitalize">
-                  <span className="text-emerald-600 font-black uppercase tracking-tighter mr-2">Interests:</span>
-                  {person.hobbies.toLowerCase()}
-                </p>
-              )}
-            </div>
+          <div className="mt-12 p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm italic text-slate-600 leading-relaxed">
+            "{person.bio}"
+            {person.hobbies && (
+              <p className="mt-4 not-italic text-[11px] font-bold text-slate-400 capitalize">
+                <span className="text-emerald-500 mr-2 uppercase tracking-tighter">Interests:</span> 
+                {person.hobbies.toLowerCase()}
+              </p>
+            )}
           </div>
         )}
 
-        {/* 4. LINEAR DATA LIST (Clean separate lines) */}
-        <div className="mt-14 space-y-10">
-          <section>
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 mb-6 ml-2">Family Information</h3>
-            <div className="space-y-8 ml-2">
-              <SimpleRow label="Father's Name" value={person.father_name} />
-              <SimpleRow label="Mother's Name" value={person.mother_name} />
-              <SimpleRow label="Family Business" value={person.business} />
+        {/* 3. THE FAMILY CARD (Everything in one card) */}
+        <div className="mt-8 bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">
+          <div className="bg-slate-50 px-8 py-4 border-b border-slate-100">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+              <Heart size={14} className="text-red-400" fill="currentColor" /> Family & Contact Info
+            </h3>
+          </div>
+          
+          <div className="p-8 space-y-6">
+            <FamilyItem label="Father's Name" value={person.father_name} />
+            <FamilyItem label="Mother's Name" value={person.mother_name} />
+            <FamilyItem label="Family Business" value={person.business} />
+            
+            <div className="pt-6 border-t border-slate-50 space-y-4">
+              <ContactItem label="Primary Contact" value={person.contact_number} isMain />
+              {person.family_contact_1 && <ContactItem label="Family Contact 1" value={person.family_contact_1} />}
+              {person.family_contact_2 && <ContactItem label="Family Contact 2" value={person.family_contact_2} />}
             </div>
-          </section>
-
-          <section className="pt-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 mb-6 ml-2">Contact Details</h3>
-            <div className="space-y-4">
-              <ContactStrip label="Primary Mobile" value={person.contact_number} isPrimary />
-              {person.family_contact_1 && <ContactStrip label="Family Contact 1" value={person.family_contact_1} />}
-              {person.family_contact_2 && <ContactStrip label="Family Contact 2" value={person.family_contact_2} />}
-            </div>
-          </section>
+          </div>
         </div>
 
-        {/* BOTTOM SPACER FOR PDF CLIPPING */}
-        <div className="h-24 w-full" /> 
+        {/* 4. PHYSICAL SPACER FOR PDF (Fixes bottom clipping) */}
+        <div className="h-20 w-full" />
       </main>
     </div>
   );
@@ -182,28 +180,23 @@ export default function DetailPage() {
 
 // --- COMPONENTS ---
 
-function SimpleRow({ label, value }: any) {
+function FamilyItem({ label, value }: any) {
   return (
-    <div className="group">
+    <div>
       <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-slate-900 tracking-tight group-hover:text-emerald-600 transition-colors">
-        {value || "—"}
-      </p>
+      <p className="text-xl font-bold text-slate-900">{value || "—"}</p>
     </div>
   );
 }
 
-function ContactStrip({ label, value, isPrimary }: any) {
+function ContactItem({ label, value, isMain }: any) {
   return (
-    <div className={`w-full p-6 rounded-3xl border transition-all ${
-      isPrimary 
-      ? 'bg-slate-900 border-slate-800 text-white shadow-2xl shadow-slate-200' 
-      : 'bg-white border-slate-100 text-slate-700'
-    }`}>
-      <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isPrimary ? 'text-emerald-400' : 'text-slate-400'}`}>
-        {label}
-      </p>
-      <p className={`text-xl font-bold ${isPrimary ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+    <div className={`flex justify-between items-center p-4 rounded-2xl ${isMain ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600'}`}>
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">{label}</p>
+        <p className="font-bold">{value}</p>
+      </div>
+      <Phone size={16} className={isMain ? 'text-emerald-400' : 'text-slate-300'} />
     </div>
   );
 }
