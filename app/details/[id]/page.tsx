@@ -1,3 +1,5 @@
+detail page-
+
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -28,17 +30,7 @@ export default function DetailPage() {
 
     try {
       const element = downloadRef.current;
-      // const element = document.getElementById("pdf-content") as HTMLElement;
 
-      const canvas = await html2canvas(element, {
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#FAFBFF",
-        // Force the canvas to be the full height of the element
-        height: element.scrollHeight,
-        windowHeight: element.scrollHeight
-      });
       const canvas = await html2canvas(element, {
         scrollX: 0,
         scrollY: -window.scrollY,
