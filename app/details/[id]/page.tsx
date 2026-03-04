@@ -21,52 +21,56 @@ export default function DetailPage() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   // --- FIXED DOWNLOAD LOGIC (No Clipping) ---
-  const handleDownload = async () => {
+const handleDownload = async () => {
     if (!downloadRef.current) return;
     setIsDownloading(true);
 
-    // Trick: Scroll to top so html2canvas captures from the start
+    // Scroll to top is essential for correct coordinate calculation
     window.scrollTo(0, 0);
 
     try {
       const element = downloadRef.current;
-
       const canvas = await html2canvas(element, {
-        scrollX: 0,
-        scrollY: -window.scrollY,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        scale: 2,
+        scale: 2, // Higher scale = Sharper text
         useCORS: true,
         backgroundColor: "#FAFBFF",
+        scrollY: -window.scrollY,
+        onclone: (clonedDoc) => {
+          // Ensure the element is fully expanded in the hidden clone
+          const el = clonedDoc.getElementById('pdf-content');
+          if (el) el.style.height = 'auto';
+        }
       });
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate how many PDF pages we need
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
+      
       let heightLeft = imgHeight;
       let position = 0;
-    
+
+      // First Page
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
-    
-      // Multi-page handling
+
+      // Subsequent Pages (If content is very long)
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
       }
-    
-      pdf.save(`${person.name}_Biodata.pdf`);
 
+      pdf.save(`${person.name}_Biodata.pdf`);
     } catch (err) {
-      console.error(err);
+      console.error("PDF Export Error:", err);
+      alert("Could not generate PDF. Please try again.");
     } finally {
       setIsDownloading(false);
     }
